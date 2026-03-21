@@ -1,120 +1,162 @@
---// ตั้งค่าชื่อผู้รับ
-local PLRNAME = "G_minoru273"
+repeat task.wait() until game:IsLoaded()
 
---// สร้าง GUI
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VirtualUser = game:GetService("VirtualUser")
+
+local player = Players.LocalPlayer
+
+-- 📡 Remote
+local abilityRemote = ReplicatedStorage:WaitForChild("AbilitySystem"):WaitForChild("Remotes"):WaitForChild("RequestAbility")
+local spawnBossRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("RequestAutoSpawn")
+local portalRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("TeleportToPortal")
+
+-- ⚙️ ตั้งค่า
+local WEAPON_NAME = "Strongest In History"
+local HEIGHT = 15
+
+-- 📍 จุด
+local POSITIONS = {
+    {portal = "Slime", pos = CFrame.new(-1124.75, 19.70, 371.23)},
+    {portal = "Academy", pos = CFrame.new(1072.38, 1.76, 1275.86)},
+    {portal = "Boss", pos = CFrame.new(776.71, -0.39, -1091.70)},
+    {portal = "Shinjuku", pos = CFrame.new(666.20, 1.85, -1695.58)},
+    {portal = "Shinjuku", pos = CFrame.new(-18.39, 2.46, -1845.56)}
+}
+
+--------------------------------------------------
+-- 🥊 Equip
+local function EquipWeapon()
+    local char = player.Character or player.CharacterAdded:Wait()
+    local tool = player.Backpack:FindFirstChild(WEAPON_NAME)
+
+    if tool and not char:FindFirstChild(WEAPON_NAME) then
+        tool.Parent = char
+    end
+end
+
+--------------------------------------------------
+-- 🌀 Portal
+local function UsePortal(name)
+    pcall(function()
+        portalRemote:FireServer(name)
+    end)
+end
+
+--------------------------------------------------
+-- 🔒 วาปนิ่ง (แก้เด้ง)
+local function TP(cf)
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hrp = char:WaitForChild("HumanoidRootPart")
+
+    hrp.Anchored = true
+    hrp.CFrame = cf + Vector3.new(0, HEIGHT, 0)
+
+    task.wait(0.2)
+
+    hrp.Anchored = false
+end
+
+--------------------------------------------------
+-- 🛡️ กันเด้งเพิ่ม
+local function Stabilize()
+    local char = player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+
+    if hrp then
+        hrp.Velocity = Vector3.zero
+        hrp.RotVelocity = Vector3.zero
+    end
+end
+
+--------------------------------------------------
+-- ⚔️ Skill
+local function UseSkill()
+    pcall(function()
+        abilityRemote:FireServer(2)
+    end)
+end
+
+--------------------------------------------------
+-- 🔁 สถานะ
+local running = true
+local paused = false
+local bossSpawned = false
+
+--------------------------------------------------
+-- 🔁 Loop
+task.spawn(function()
+    while true do
+        if running and not paused then
+            EquipWeapon()
+            Stabilize()
+
+            -- 👹 Spawn ครั้งเดียว
+            if not bossSpawned then
+                pcall(function()
+                    spawnBossRemote:FireServer("SaberBoss")
+                end)
+                bossSpawned = true
+            end
+
+            for _, data in ipairs(POSITIONS) do
+                if not running then break end
+
+                while paused do task.wait() end
+
+                EquipWeapon()
+
+                UsePortal(data.portal)
+                task.wait(0.3)
+
+                TP(data.pos)
+                task.wait(0.5)
+
+                UseSkill()
+
+                task.wait(0.3)
+            end
+        else
+            task.wait(0.1)
+        end
+    end
+end)
+
+--------------------------------------------------
+-- 🛡️ กัน AFK
+player.Idled:Connect(function()
+    VirtualUser:CaptureController()
+    VirtualUser:ClickButton2(Vector2.new())
+end)
+
+--------------------------------------------------
+-- 🎮 UI
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-local Frame = Instance.new("Frame", ScreenGui)
-local Button = Instance.new("TextButton", Frame)
-local Status = Instance.new("TextLabel", Frame)
-local Sound = Instance.new("Sound", ScreenGui)
 
--- ตั้งเสียง (ID เสียงแจ้งเตือน Roblox)
-Sound.SoundId = "rbxassetid://4590662764" -- เสียงติ๊ง
-Sound.Volume = 2
+-- ⏸️ Pause
+local PauseBtn = Instance.new("TextButton", ScreenGui)
+PauseBtn.Size = UDim2.new(0, 200, 0, 50)
+PauseBtn.Position = UDim2.new(0.02, 0, 0.35, 0)
+PauseBtn.Text = "PAUSE ⏸️"
+PauseBtn.BackgroundColor3 = Color3.fromRGB(80,80,0)
+PauseBtn.TextColor3 = Color3.new(1,1,1)
+PauseBtn.TextScaled = true
 
-Frame.Size = UDim2.new(0, 220, 0, 90)
-Frame.Position = UDim2.new(0.4, 0, 0.2, 0)
-Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-Frame.Active = true
-Frame.Draggable = true
-Frame.Visible = true
-Frame.BorderSizePixel = 0
-Frame.BackgroundTransparency = 0.1
+PauseBtn.MouseButton1Click:Connect(function()
+    paused = not paused
+    PauseBtn.Text = paused and "RESUME ▶️" or "PAUSE ⏸️"
+end)
 
-Button.Size = UDim2.new(1, -20, 0, 40)
-Button.Position = UDim2.new(0, 10, 0, 10)
-Button.Text = "▶ เริ่มทำงาน"
-Button.TextColor3 = Color3.fromRGB(0, 255, 0)
-Button.BackgroundColor3 = Color3.fromRGB(0, 100, 0)
-Button.Font = Enum.Font.SourceSansBold
-Button.TextScaled = true
-Button.BorderSizePixel = 0
-Button.AutoButtonColor = true
+-- 🛑 Stop
+local StopBtn = Instance.new("TextButton", ScreenGui)
+StopBtn.Size = UDim2.new(0, 200, 0, 50)
+StopBtn.Position = UDim2.new(0.02, 0, 0.42, 0)
+StopBtn.Text = "STOP 🛑"
+StopBtn.BackgroundColor3 = Color3.fromRGB(120,0,0)
+StopBtn.TextColor3 = Color3.new(1,1,1)
+StopBtn.TextScaled = true
 
-Status.Size = UDim2.new(1, -20, 0, 25)
-Status.Position = UDim2.new(0, 10, 0, 55)
-Status.BackgroundTransparency = 1
-Status.Text = "รอสั่งงาน..."
-Status.TextColor3 = Color3.fromRGB(255, 255, 0)
-Status.Font = Enum.Font.SourceSans
-Status.TextScaled = true
-
-local running = false
-
-Button.MouseButton1Click:Connect(function()
-	if running then return end
-	running = true
-	Button.Text = "กำลังทำงาน..."
-	Button.BackgroundColor3 = Color3.fromRGB(150, 150, 0)
-	Status.Text = "กำลังทำงาน..."
-	Sound:Play()
-
-	--================= เริ่มโค้ดเดิม =================--
-	repeat task.wait() until game.Players.LocalPlayer:GetAttribute("DinoEventOnlineTime") ~= nil
-	local args = {"SellAll","All","Pet"}
-	game:GetService("ReplicatedStorage"):WaitForChild("Remote"):WaitForChild("PetRE"):FireServer(unpack(args))
-	task.wait(1)
-	game:GetService("ReplicatedStorage"):WaitForChild("Remote"):WaitForChild("FishingRE"):FireServer("SetEggQuickSell", {
-		["1"] = "\255",
-		Diamond = false,
-		["3"] = true,
-		["2"] = false,
-		["5"] = false,
-		["4"] = false,
-		["6"] = false,
-		Golden = false,
-		Electirc = false,
-		Fire = false,
-		Dino = false,
-		Snow = false
-	})
-	task.wait(3)
-	for _,v in pairs(workspace.PlayerBuiltBlocks:GetChildren()) do
-		if v:FindFirstChild("RootPart") and v.RootPart:FindFirstChild("ProximityPrompt") then
-			fireproximityprompt(v.RootPart.ProximityPrompt)
-			task.wait(0.1)
-		end
-	end
-	task.wait(7)
-
-	local deletePets = {}
-	for _, v in pairs(workspace.Pets:GetChildren()) do
-		pcall(function()
-			if v:IsA("Model") and v:GetAttribute("UserId") == game.Players.LocalPlayer.UserId then
-				if not v.RootPart:FindFirstChild("GUI/BigPetGUI") then
-					local petspeed = v.RootPart["GUI/IdleGUI"].Speed.Text
-					local number = tonumber((petspeed:gsub("%D", "")))
-					if number and number >= 300000 then
-						table.insert(deletePets, v.Name)
-					end
-				end
-			end
-		end)
-	end
-
-	for _, petName in ipairs(deletePets) do
-		game:GetService("ReplicatedStorage"):WaitForChild("Remote"):WaitForChild("CharacterRE"):FireServer("Del", petName)
-	end
-
-	local Blacklist = {"Wolf_E1", "Kangroo_E1", "Rhino_E1", "Lion_E1", "Gorilla_E1", "Seaturtle", "Okapi", "Needlefish", "Panther", "Butterflyfish", "Penguin_E1", "Ostrich_E1", "Baldeagle_E1", "Bee_E1", "Butterfly_E1"}
-	game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = game.Players[PLRNAME].Character.HumanoidRootPart.CFrame
-	task.wait(1)
-	for _,v in pairs(game.Players.LocalPlayer.PlayerGui.Data.Pets:GetChildren()) do
-		if not table.find(Blacklist, v:GetAttribute("T")) then
-			game.ReplicatedStorage.Remote.CharacterRE:FireServer("Focus", v.Name)
-			task.wait(0.1)
-			game.ReplicatedStorage.Remote.GiftRE:FireServer(game.Players[PLRNAME])
-			task.wait(0.3)
-		end
-	end
-	game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId)
-	--================= จบโค้ดเดิม =================--
-
-	-- แจ้งเตือนตอนเสร็จ
-	task.wait(2)
-	Status.Text = "✅ เสร็จแล้วรีเกมโว้ย!"
-	Status.TextColor3 = Color3.fromRGB(0, 255, 0)
-	Button.Text = "✅ เสร็จสิ้น"
-	Button.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-	Sound:Play()
+StopBtn.MouseButton1Click:Connect(function()
+    running = false
+    StopBtn.Text = "STOPPED ❌"
 end)
