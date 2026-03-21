@@ -13,7 +13,7 @@ local portalRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Tel
 
 -- ⚙️ ตั้งค่า
 local WEAPON_NAME = "Strongest In History"
-local HEIGHT = 15
+local HEIGHT = 7
 
 -- 📍 จุด
 local POSITIONS = {
