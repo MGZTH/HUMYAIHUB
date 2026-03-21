@@ -13,7 +13,7 @@ local portalRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Tel
 
 -- ⚙️ ตั้งค่า
 local WEAPON_NAME = "Strongest In History"
-local HEIGHT = 7
+local HEIGHT = 15
 
 -- 📍 จุด
 local POSITIONS = {
@@ -44,7 +44,7 @@ local function UsePortal(name)
 end
 
 --------------------------------------------------
--- 🔒 วาปนิ่ง (แก้เด้ง)
+-- 🔒 วาปนิ่ง
 local function TP(cf)
     local char = player.Character or player.CharacterAdded:Wait()
     local hrp = char:WaitForChild("HumanoidRootPart")
@@ -58,7 +58,7 @@ local function TP(cf)
 end
 
 --------------------------------------------------
--- 🛡️ กันเด้งเพิ่ม
+-- 🛡️ กันเด้ง
 local function Stabilize()
     local char = player.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -84,14 +84,13 @@ local paused = false
 local bossSpawned = false
 
 --------------------------------------------------
--- 🔁 Loop
+-- 🔁 Loop ฟาร์ม
 task.spawn(function()
     while true do
         if running and not paused then
             EquipWeapon()
             Stabilize()
 
-            -- 👹 Spawn ครั้งเดียว
             if not bossSpawned then
                 pcall(function()
                     spawnBossRemote:FireServer("SaberBoss")
@@ -101,7 +100,6 @@ task.spawn(function()
 
             for _, data in ipairs(POSITIONS) do
                 if not running then break end
-
                 while paused do task.wait() end
 
                 EquipWeapon()
@@ -118,6 +116,68 @@ task.spawn(function()
             end
         else
             task.wait(0.1)
+        end
+    end
+end)
+
+--------------------------------------------------
+-- 🔥 AUTO HAKI (เพิ่มกลับแล้ว)
+_G.AutoBuso = true
+_G.AutoObservation = true
+_G.AutoConqueror = true
+
+-- ✅ เช็ค Buso
+local function IsBusoActive()
+    local char = player.Character
+    if not char then return false end
+
+    local parts = {
+        char:FindFirstChild("Right Arm"),
+        char:FindFirstChild("Left Arm"),
+    }
+
+    for _, part in ipairs(parts) do
+        if part and part:IsA("Part") then
+            local c = part.Color
+            if c.R == 0 and c.G == 0 and c.B == 0 then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+-- 🔥 Buso
+task.spawn(function()
+    while task.wait(0.5) do
+        if running and _G.AutoBuso then
+            if not IsBusoActive() then
+                ReplicatedStorage.RemoteEvents.HakiRemote:FireServer("Toggle")
+            end
+        end
+    end
+end)
+
+-- 👁️ Observation
+task.spawn(function()
+    while task.wait(0.5) do
+        if running and _G.AutoObservation then
+            local gui = player:FindFirstChild("PlayerGui")
+            if gui and gui:FindFirstChild("DodgeCounterUI") then
+                if not gui.DodgeCounterUI.MainFrame.Visible then
+                    ReplicatedStorage.RemoteEvents.ObservationHakiRemote:FireServer("Toggle")
+                end
+            end
+        end
+    end
+end)
+
+-- ⚡ Conqueror
+task.spawn(function()
+    while task.wait(1) do
+        if running and _G.AutoConqueror then
+            ReplicatedStorage.RemoteEvents.ConquerorHakiRemote:FireServer()
         end
     end
 end)
