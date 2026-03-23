@@ -42,8 +42,8 @@ local function equip()
     local char = player.Character
     if not char then return end
 
-    local tool = player.Backpack:FindFirstChild("Blessed Maiden", "Strongest In History")
-    if tool and not char:FindFirstChild("Blessed Maiden", "Strongest In History") then
+    local tool = player.Backpack:FindFirstChild("Blessed Maiden","Strongest In History")
+    if tool and not char:FindFirstChild("Blessed Maiden","Strongest In History") then
         tool.Parent = char
     end
 end
