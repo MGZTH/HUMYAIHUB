@@ -144,7 +144,7 @@ local function go(name)
     pcall(function()
         TeleportRemote:FireServer(name)
     end)
-    task.wait(2)
+    task.wait(0.5)
 end
 
 -- 📍 NPC
