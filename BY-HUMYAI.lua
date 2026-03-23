@@ -1,222 +1,191 @@
-repeat task.wait() until game:IsLoaded()
+-- FINAL SMOOTH + SELECTED TWEEN
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
 local VirtualUser = game:GetService("VirtualUser")
 
 local player = Players.LocalPlayer
+_G.Run = true
 
--- 📡 Remote
-local abilityRemote = ReplicatedStorage:WaitForChild("AbilitySystem"):WaitForChild("Remotes"):WaitForChild("RequestAbility")
-local spawnBossRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("RequestAutoSpawn")
-local portalRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("TeleportToPortal")
+-- 🔥 Remote
+local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
--- ⚙️ ตั้งค่า
-local WEAPON_NAME = "Strongest In History"
-local HEIGHT = 15
+local SpawnRimuru = RemoteEvents:WaitForChild("RequestSpawnRimuru")
+local SpawnStrongest = Remotes:WaitForChild("RequestSpawnStrongestBoss")
+local SpawnBoss = Remotes:WaitForChild("RequestSummonBoss")
 
--- 📍 จุด
-local POSITIONS = {
-    {portal = "Slime", pos = CFrame.new(-1124.75, 19.70, 371.23)},
-    {portal = "Academy", pos = CFrame.new(1072.38, 1.76, 1275.86)},
-    {portal = "Boss", pos = CFrame.new(776.71, -0.39, -1091.70)},
-    {portal = "Shinjuku", pos = CFrame.new(666.20, 1.85, -1695.58)},
-    {portal = "Shinjuku", pos = CFrame.new(-18.39, 2.46, -1845.56)}
-}
+local TeleportRemote = Remotes:WaitForChild("TeleportToPortal")
+local CombatRemote = ReplicatedStorage:WaitForChild("CombatSystem"):WaitForChild("Remotes"):WaitForChild("RequestHit")
+local HakiRemote = RemoteEvents:WaitForChild("HakiRemote")
 
---------------------------------------------------
--- 🥊 Equip
-local function EquipWeapon()
-    local char = player.Character or player.CharacterAdded:Wait()
-    local tool = player.Backpack:FindFirstChild(WEAPON_NAME)
+-- =========================
+-- 💤 Anti AFK
+-- =========================
+player.Idled:Connect(function()
+    VirtualUser:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+    task.wait(1)
+    VirtualUser:Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+end)
 
-    if tool and not char:FindFirstChild(WEAPON_NAME) then
+-- =========================
+-- 🛡️ Auto Buso
+-- =========================
+task.spawn(function()
+    while task.wait(3) do
+        pcall(function()
+            HakiRemote:FireServer("Toggle")
+        end)
+    end
+end)
+
+-- =========================
+-- ⚔️ Equip
+-- =========================
+local function equip()
+    local char = player.Character
+    if not char then return end
+
+    local tool = player.Backpack:FindFirstChild("Strongest In History")
+    if tool and not char:FindFirstChild("Strongest In History") then
         tool.Parent = char
     end
 end
 
---------------------------------------------------
--- 🌀 Portal
-local function UsePortal(name)
-    pcall(function()
-        portalRemote:FireServer(name)
-    end)
-end
-
---------------------------------------------------
--- 🔒 วาปนิ่ง
-local function TP(cf)
-    local char = player.Character or player.CharacterAdded:Wait()
-    local hrp = char:WaitForChild("HumanoidRootPart")
-
-    hrp.Anchored = true
-    hrp.CFrame = cf + Vector3.new(0, HEIGHT, 0)
-
-    task.wait(0.2)
-
-    hrp.Anchored = false
-end
-
---------------------------------------------------
--- 🛡️ กันเด้ง
-local function Stabilize()
+-- =========================
+-- ⚡ Tween ไปหาบอส (Speed 100)
+-- =========================
+local function tweenToBoss(boss)
     local char = player.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
 
-    if hrp then
-        hrp.Velocity = Vector3.zero
-        hrp.RotVelocity = Vector3.zero
+    local root = boss:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    local hrp = char.HumanoidRootPart
+    local dist = (hrp.Position - root.Position).Magnitude
+    local time = dist / 100
+
+    local tween = TweenService:Create(hrp, TweenInfo.new(time, Enum.EasingStyle.Linear), {
+        CFrame = root.CFrame * CFrame.new(0,0,8)
+    })
+
+    tween:Play()
+    tween.Completed:Wait()
+end
+
+-- =========================
+-- 🔍 หา boss
+-- =========================
+local function findBoss(name)
+    for _, v in pairs(Workspace:GetDescendants()) do
+        if v:IsA("Model") and v.Name == name then
+            if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                return v
+            end
+        end
     end
 end
 
---------------------------------------------------
--- ⚔️ Skill
-local function UseSkill()
-    pcall(function()
-        abilityRemote:FireServer(2)
-    end)
+-- =========================
+-- ⚔️ Kill (Smooth + Tween เฉพาะบางตัว)
+-- =========================
+local function kill(name)
+    local boss = findBoss(name)
+    if not boss then return end
+
+    local root = boss:FindFirstChild("HumanoidRootPart")
+    local hum = boss:FindFirstChild("Humanoid")
+    if not root or not hum then return end
+
+    -- 🔥 Tween เฉพาะ 3 ตัว
+    local useTween = (
+        name == "RimuruBoss_Normal" or
+        name == "StrongestofTodayBoss_Normal" or
+        name == "StrongestinHistoryBoss_Normal"
+    )
+
+    if useTween then
+        tweenToBoss(boss)
+    end
+
+    while hum.Health > 0 and _G.Run do
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.CFrame = root.CFrame * CFrame.new(0,0,9)
+        end
+
+        equip()
+        CombatRemote:FireServer(root.Position)
+
+        task.wait(0.15)
+    end
 end
 
---------------------------------------------------
--- 🔁 สถานะ
-local running = true
-local paused = false
-local bossSpawned = false
-
---------------------------------------------------
--- 🔁 Loop ฟาร์ม
-task.spawn(function()
-    while true do
-        if running and not paused then
-            EquipWeapon()
-            Stabilize()
-
-            if not bossSpawned then
-                pcall(function()
-                    spawnBossRemote:FireServer("SaberBoss")
-                end)
-                bossSpawned = true
-            end
-
-            for _, data in ipairs(POSITIONS) do
-                if not running then break end
-                while paused do task.wait() end
-
-                EquipWeapon()
-
-                UsePortal(data.portal)
-                task.wait(0.3)
-
-                TP(data.pos)
-                task.wait(0.5)
-
-                UseSkill()
-
-                task.wait(0.3)
-            end
-        else
-            task.wait(0.1)
-        end
-    end
-end)
-
---------------------------------------------------
--- 🔥 AUTO HAKI (เพิ่มกลับแล้ว)
-_G.AutoBuso = true
-_G.AutoObservation = true
-_G.AutoConqueror = true
-
--- ✅ เช็ค Buso
-local function IsBusoActive()
-    local char = player.Character
-    if not char then return false end
-
-    local parts = {
-        char:FindFirstChild("Right Arm"),
-        char:FindFirstChild("Left Arm"),
-    }
-
-    for _, part in ipairs(parts) do
-        if part and part:IsA("Part") then
-            local c = part.Color
-            if c.R == 0 and c.G == 0 and c.B == 0 then
-                return true
-            end
-        end
-    end
-
-    return false
+-- =========================
+-- 🌍 วาป
+-- =========================
+local function go(name)
+    TeleportRemote:FireServer(name)
+    task.wait(2.5)
 end
 
--- 🔥 Buso
-task.spawn(function()
-    while task.wait(0.5) do
-        if running and _G.AutoBuso then
-            if not IsBusoActive() then
-                ReplicatedStorage.RemoteEvents.HakiRemote:FireServer("Toggle")
-            end
-        end
+-- =========================
+-- ⏳ รอ spawn
+-- =========================
+local function waitBoss(name)
+    for i = 1, 20 do
+        if findBoss(name) then return end
+        task.wait(0.5)
     end
-end)
+end
 
--- 👁️ Observation
-task.spawn(function()
-    while task.wait(0.5) do
-        if running and _G.AutoObservation then
-            local gui = player:FindFirstChild("PlayerGui")
-            if gui and gui:FindFirstChild("DodgeCounterUI") then
-                if not gui.DodgeCounterUI.MainFrame.Visible then
-                    ReplicatedStorage.RemoteEvents.ObservationHakiRemote:FireServer("Toggle")
-                end
-            end
-        end
-    end
-end)
+-- =========================
+-- 📍 NPC Strongest
+-- =========================
+local NPC = CFrame.new(
+    392.87, -2.22, -2177.80,
+    -0.91, 0, -0.40,
+    0, 1, 0,
+    0.40, 0, -0.91
+)
 
--- ⚡ Conqueror
-task.spawn(function()
-    while task.wait(1) do
-        if running and _G.AutoConqueror then
-            ReplicatedStorage.RemoteEvents.ConquerorHakiRemote:FireServer()
-        end
-    end
-end)
+-- =========================
+-- 🔁 LOOP หลัก
+-- =========================
+while _G.Run do
 
---------------------------------------------------
--- 🛡️ กัน AFK
-player.Idled:Connect(function()
-    VirtualUser:CaptureController()
-    VirtualUser:ClickButton2(Vector2.new())
-end)
+    -- 🟢 Rimuru
+    go("Slime")
+    SpawnRimuru:FireServer("Normal")
+    waitBoss("RimuruBoss_Normal")
+    kill("RimuruBoss_Normal")
 
---------------------------------------------------
--- 🎮 UI
-local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+    -- 🔴 Ichigo + Gilgamesh
+    go("Boss")
 
--- ⏸️ Pause
-local PauseBtn = Instance.new("TextButton", ScreenGui)
-PauseBtn.Size = UDim2.new(0, 200, 0, 50)
-PauseBtn.Position = UDim2.new(0.02, 0, 0.35, 0)
-PauseBtn.Text = "PAUSE ⏸️"
-PauseBtn.BackgroundColor3 = Color3.fromRGB(80,80,0)
-PauseBtn.TextColor3 = Color3.new(1,1,1)
-PauseBtn.TextScaled = true
+    SpawnBoss:FireServer("IchigoBoss")
+    waitBoss("IchigoBoss")
+    kill("IchigoBoss")
 
-PauseBtn.MouseButton1Click:Connect(function()
-    paused = not paused
-    PauseBtn.Text = paused and "RESUME ▶️" or "PAUSE ⏸️"
-end)
+    SpawnBoss:FireServer("GilgameshBoss","Normal")
+    waitBoss("GilgameshBoss")
+    kill("GilgameshBoss")
 
--- 🛑 Stop
-local StopBtn = Instance.new("TextButton", ScreenGui)
-StopBtn.Size = UDim2.new(0, 200, 0, 50)
-StopBtn.Position = UDim2.new(0.02, 0, 0.42, 0)
-StopBtn.Text = "STOP 🛑"
-StopBtn.BackgroundColor3 = Color3.fromRGB(120,0,0)
-StopBtn.TextColor3 = Color3.new(1,1,1)
-StopBtn.TextScaled = true
+    -- 🟣 Strongest
+    go("Shinjuku")
 
-StopBtn.MouseButton1Click:Connect(function()
-    running = false
-    StopBtn.Text = "STOPPED ❌"
-end)
+    -- Tween ไปหา NPC ก่อน
+    tweenToBoss({HumanoidRootPart = {CFrame = NPC}})
+
+    SpawnStrongest:FireServer("StrongestToday","Normal")
+    waitBoss("StrongestofTodayBoss_Normal")
+    kill("StrongestofTodayBoss_Normal")
+
+    SpawnStrongest:FireServer("StrongestHistory","Normal")
+    waitBoss("StrongestinHistoryBoss_Normal")
+    kill("StrongestinHistoryBoss_Normal")
+
+end
