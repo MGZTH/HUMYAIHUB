@@ -101,7 +101,7 @@ local function findBoss(name)
     end
 end
 
--- ⚡ Tween (สปีด 120)
+-- ⚡ Tween (สปีด 140)
 local function tween(cf)
     local char = player.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
@@ -144,7 +144,7 @@ local function go(name)
     pcall(function()
         TeleportRemote:FireServer(name)
     end)
-    task.wait(0.5)
+    task.wait(1)
 end
 
 -- 📍 NPC
