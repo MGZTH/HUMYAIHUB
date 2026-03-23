@@ -145,7 +145,7 @@ local function go(name)
     pcall(function()
         TeleportRemote:FireServer(name)
     end)
-    task.wait(0.5)
+    task.wait(1.5)
 end
 
 -- 📍 NPC
@@ -158,7 +158,7 @@ local NPC = CFrame.new(
 
 -- 🔁 LOOP
 task.spawn(function()
-    while task.wait(1) do
+    while task.wait(0.5) do
         if not _G.Run then break end
 
         -- Rimuru
