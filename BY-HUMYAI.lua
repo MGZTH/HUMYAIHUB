@@ -1,4 +1,4 @@
--- FINAL FIX (No Freeze Shinjuku)
+-- FINAL FAST (No Delay / Instant Move)
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -55,7 +55,7 @@ local function equip()
 end
 
 -- =========================
--- ⚡ Tween ไป CFrame (ใช้กับ NPC)
+-- ⚡ Tween (เร็วขึ้น)
 -- =========================
 local function tweenTo(cf)
     local char = player.Character
@@ -63,23 +63,17 @@ local function tweenTo(cf)
 
     local hrp = char.HumanoidRootPart
     local dist = (hrp.Position - cf.Position).Magnitude
-    local time = dist / 100
+    local time = dist / 110 -- 🔥 เร็วขึ้น
 
-    local tween = TweenService:Create(hrp, TweenInfo.new(time, Enum.EasingStyle.Linear), {
-        CFrame = cf
-    })
-
-    tween:Play()
-    tween.Completed:Wait()
+    local t = TweenService:Create(hrp, TweenInfo.new(time, Enum.EasingStyle.Linear), {CFrame = cf})
+    t:Play()
 end
 
--- =========================
--- ⚡ Tween ไป Boss
--- =========================
 local function tweenToBoss(boss)
     local root = boss:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-    tweenTo(root.CFrame * CFrame.new(0,0,8))
+    if root then
+        tweenTo(root.CFrame * CFrame.new(0,0,8))
+    end
 end
 
 -- =========================
@@ -96,56 +90,51 @@ local function findBoss(name)
 end
 
 -- =========================
--- ⚔️ Kill
+-- ⚔️ Kill (เริ่มทันที)
 -- =========================
 local function kill(name)
-    local boss = findBoss(name)
+    local boss
+
+    -- 🔥 หาแบบเร็ว
+    for i = 1, 40 do
+        boss = findBoss(name)
+        if boss then break end
+        task.wait(0.2)
+    end
+
     if not boss then return end
 
     local root = boss:FindFirstChild("HumanoidRootPart")
     local hum = boss:FindFirstChild("Humanoid")
     if not root or not hum then return end
 
-    local useTween = (
-        name == "RimuruBoss_Normal" or
-        name == "StrongestofTodayBoss_Normal" or
-        name == "StrongestinHistoryBoss_Normal"
-    )
-
-    if useTween then
+    -- 🔥 Tween เฉพาะตัวหลัก
+    if name == "RimuruBoss_Normal"
+    or name == "StrongestofTodayBoss_Normal"
+    or name == "StrongestinHistoryBoss_Normal" then
         tweenToBoss(boss)
-        task.wait(0.3) -- 🔥 กันค้าง
     end
 
+    -- 🔥 เข้าโจมตีทันที
     while hum.Health > 0 and _G.Run do
         local char = player.Character
         if char and char:FindFirstChild("HumanoidRootPart") then
-            char.HumanoidRootPart.CFrame = root.CFrame * CFrame.new(0,0,9)
+            char.HumanoidRootPart.CFrame = root.CFrame * CFrame.new(0,0,8)
         end
 
         equip()
         CombatRemote:FireServer(root.Position)
 
-        task.wait(0.15)
+        task.wait(0.1) -- 🔥 เร็วขึ้น
     end
 end
 
 -- =========================
--- 🌍 วาป
+-- 🌍 วาป (ไวขึ้น)
 -- =========================
 local function go(name)
     TeleportRemote:FireServer(name)
-    task.wait(2.5)
-end
-
--- =========================
--- ⏳ รอ spawn
--- =========================
-local function waitBoss(name)
-    for i = 1, 20 do
-        if findBoss(name) then return end
-        task.wait(0.5)
-    end
+    task.wait(1.2) -- 🔥 ลดดีเลย์
 end
 
 -- =========================
@@ -166,32 +155,27 @@ while _G.Run do
     -- 🟢 Rimuru
     go("Slime")
     SpawnRimuru:FireServer("Normal")
-    waitBoss("RimuruBoss_Normal")
     kill("RimuruBoss_Normal")
 
     -- 🔴 Ichigo + Gilgamesh
     go("Boss")
 
     SpawnBoss:FireServer("IchigoBoss")
-    waitBoss("IchigoBoss")
     kill("IchigoBoss")
 
     SpawnBoss:FireServer("GilgameshBoss","Normal")
-    waitBoss("GilgameshBoss")
     kill("GilgameshBoss")
 
-    -- 🟣 Strongest (FIX แล้ว)
+    -- 🟣 Strongest
     go("Shinjuku")
 
-    tweenTo(NPC)
-    task.wait(0.5) -- 🔥 กันค้างแน่นอน
+    tweenTo(NPC) -- 🔥 วิ่งทันที ไม่ wait
+    task.wait(0.3)
 
     SpawnStrongest:FireServer("StrongestToday","Normal")
-    waitBoss("StrongestofTodayBoss_Normal")
     kill("StrongestofTodayBoss_Normal")
 
     SpawnStrongest:FireServer("StrongestHistory","Normal")
-    waitBoss("StrongestinHistoryBoss_Normal")
     kill("StrongestinHistoryBoss_Normal")
 
 end
