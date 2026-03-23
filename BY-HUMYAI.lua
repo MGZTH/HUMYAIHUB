@@ -1,4 +1,4 @@
--- FINAL SMOOTH + SELECTED TWEEN
+-- FINAL FIX (No Freeze Shinjuku)
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -55,25 +55,31 @@ local function equip()
 end
 
 -- =========================
--- ⚡ Tween ไปหาบอส (Speed 100)
+-- ⚡ Tween ไป CFrame (ใช้กับ NPC)
 -- =========================
-local function tweenToBoss(boss)
+local function tweenTo(cf)
     local char = player.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
 
-    local root = boss:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-
     local hrp = char.HumanoidRootPart
-    local dist = (hrp.Position - root.Position).Magnitude
+    local dist = (hrp.Position - cf.Position).Magnitude
     local time = dist / 100
 
     local tween = TweenService:Create(hrp, TweenInfo.new(time, Enum.EasingStyle.Linear), {
-        CFrame = root.CFrame * CFrame.new(0,0,8)
+        CFrame = cf
     })
 
     tween:Play()
     tween.Completed:Wait()
+end
+
+-- =========================
+-- ⚡ Tween ไป Boss
+-- =========================
+local function tweenToBoss(boss)
+    local root = boss:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    tweenTo(root.CFrame * CFrame.new(0,0,8))
 end
 
 -- =========================
@@ -90,7 +96,7 @@ local function findBoss(name)
 end
 
 -- =========================
--- ⚔️ Kill (Smooth + Tween เฉพาะบางตัว)
+-- ⚔️ Kill
 -- =========================
 local function kill(name)
     local boss = findBoss(name)
@@ -100,7 +106,6 @@ local function kill(name)
     local hum = boss:FindFirstChild("Humanoid")
     if not root or not hum then return end
 
-    -- 🔥 Tween เฉพาะ 3 ตัว
     local useTween = (
         name == "RimuruBoss_Normal" or
         name == "StrongestofTodayBoss_Normal" or
@@ -109,6 +114,7 @@ local function kill(name)
 
     if useTween then
         tweenToBoss(boss)
+        task.wait(0.3) -- 🔥 กันค้าง
     end
 
     while hum.Health > 0 and _G.Run do
@@ -143,7 +149,7 @@ local function waitBoss(name)
 end
 
 -- =========================
--- 📍 NPC Strongest
+-- 📍 NPC
 -- =========================
 local NPC = CFrame.new(
     392.87, -2.22, -2177.80,
@@ -153,7 +159,7 @@ local NPC = CFrame.new(
 )
 
 -- =========================
--- 🔁 LOOP หลัก
+-- 🔁 LOOP
 -- =========================
 while _G.Run do
 
@@ -174,11 +180,11 @@ while _G.Run do
     waitBoss("GilgameshBoss")
     kill("GilgameshBoss")
 
-    -- 🟣 Strongest
+    -- 🟣 Strongest (FIX แล้ว)
     go("Shinjuku")
 
-    -- Tween ไปหา NPC ก่อน
-    tweenToBoss({HumanoidRootPart = {CFrame = NPC}})
+    tweenTo(NPC)
+    task.wait(0.5) -- 🔥 กันค้างแน่นอน
 
     SpawnStrongest:FireServer("StrongestToday","Normal")
     waitBoss("StrongestofTodayBoss_Normal")
