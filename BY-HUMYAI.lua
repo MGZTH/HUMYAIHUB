@@ -119,8 +119,8 @@ end
 local function waitBoss(name)
     local t = 0
     repeat
-        task.wait(0.5)
-        t += 0.5
+        task.wait(2)
+        t += 2
     until findBoss(name) or t > 12
 end
 
