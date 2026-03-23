@@ -1,8 +1,5 @@
-repeat task.wait() until game:IsLoaded()
+-- RC GOD FARM (FINAL + SMARTHIT)
 
--- =========================
--- 🔧 Services
--- =========================
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -11,17 +8,12 @@ local VirtualUser = game:GetService("VirtualUser")
 
 local player = Players.LocalPlayer
 
--- =========================
--- 🔥 CONFIG
--- =========================
+-- CONFIG
 _G.Run = true
 _G.AutoEquip = true
-_G.AutoBuso = true
 _G.SmartHit = true
 
--- =========================
--- 🔥 Remote
--- =========================
+-- Remote
 local RemoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
@@ -33,45 +25,31 @@ local TeleportRemote = Remotes:WaitForChild("TeleportToPortal")
 local CombatRemote = ReplicatedStorage:WaitForChild("CombatSystem"):WaitForChild("Remotes"):WaitForChild("RequestHit")
 local HakiRemote = RemoteEvents:WaitForChild("HakiRemote")
 
--- =========================
--- 💤 Anti AFK
--- =========================
+-- Anti AFK
 player.Idled:Connect(function()
-    VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-    task.wait(1)
-    VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+    VirtualUser:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+    task.wait(5)
+    VirtualUser:Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
 end)
 
--- =========================
--- 🛡️ Auto Buso
--- =========================
-task.spawn(function()
-    while task.wait(2) do
-        if _G.AutoBuso then
-            pcall(function()
-                HakiRemote:FireServer("Toggle")
-            end)
-        end
-    end
+-- 🛡️ Auto Buso (ครั้งเดียว)
+pcall(function()
+    HakiRemote:FireServer("Toggle")
 end)
 
--- =========================
--- ⚔️ Auto Equip
--- =========================
+-- ⚔️ Auto Equip (Blessed Maiden)
 local function equip()
     if not _G.AutoEquip then return end
     local char = player.Character
     if not char then return end
 
-    local tool = player.Backpack:FindFirstChild("Strongest In History")
-    if tool and not char:FindFirstChild("Strongest In History") then
+    local tool = player.Backpack:FindFirstChild("Blessed Maiden")
+    if tool and not char:FindFirstChild("Blessed Maiden") then
         tool.Parent = char
     end
 end
 
--- =========================
 -- 🧠 หา boss ใกล้
--- =========================
 local function getBossNear()
     local char = player.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
@@ -87,9 +65,7 @@ local function getBossNear()
     end
 end
 
--- =========================
 -- ⚡ Smart Hit
--- =========================
 task.spawn(function()
     while task.wait(math.random(12,18)/100) do
         if not _G.SmartHit then continue end
@@ -115,9 +91,7 @@ task.spawn(function()
     end
 end)
 
--- =========================
--- 🧠 หา boss ตามชื่อ
--- =========================
+-- หา boss ตามชื่อ
 local function findBoss(name)
     for _, v in pairs(Workspace:GetDescendants()) do
         if v:IsA("Model") and v.Name == name then
@@ -128,62 +102,21 @@ local function findBoss(name)
     end
 end
 
--- =========================
--- ⚔️ Kill Boss (Tween บางตัว)
--- =========================
-local function kill(name)
-    local boss = findBoss(name)
-    if not boss then return end
+-- ⚡ Tween (สปีด 120)
+local function tween(cf)
+    local char = player.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
 
-    local root = boss:FindFirstChild("HumanoidRootPart")
-    if not root then return end
+    local hrp = char.HumanoidRootPart
+    local dist = (hrp.Position - cf.Position).Magnitude
+    local time = dist / 120
 
-    local useTween = (
-        name == "RimuruBoss_Normal" or
-        name == "StrongestofTodayBoss_Normal" or
-        name == "StrongestinHistoryBoss_Normal"
-    )
-
-    repeat
-        local char = player.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            local hrp = char.HumanoidRootPart
-
-            if useTween then
-                local dist = (hrp.Position - root.Position).Magnitude
-                local time = dist / 120
-
-                local tween = TweenService:Create(
-                    hrp,
-                    TweenInfo.new(time, Enum.EasingStyle.Linear),
-                    {CFrame = root.CFrame * CFrame.new(0,0,8)}
-                )
-                tween:Play()
-                tween.Completed:Wait()
-            else
-                hrp.CFrame = root.CFrame * CFrame.new(0,0,10)
-            end
-        end
-
-        equip()
-        task.wait(0.2)
-
-    until not _G.Run or boss.Humanoid.Health <= 0
+    local t = TweenService:Create(hrp, TweenInfo.new(time, Enum.EasingStyle.Linear), {CFrame = cf})
+    t:Play()
+    t.Completed:Wait()
 end
 
--- =========================
--- 🌍 วาป
--- =========================
-local function go(name)
-    pcall(function()
-        TeleportRemote:FireServer(name)
-    end)
-    task.wait(3)
-end
-
--- =========================
 -- ⏳ Wait Boss
--- =========================
 local function waitBoss(name)
     local t = 0
     repeat
@@ -192,9 +125,30 @@ local function waitBoss(name)
     until findBoss(name) or t > 12
 end
 
--- =========================
+-- ⚔️ Kill (Tween)
+local function killTween(name)
+    local boss = findBoss(name)
+    if not boss then return end
+
+    local root = boss:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    repeat
+        tween(root.CFrame * CFrame.new(0,0,10))
+        equip()
+        task.wait(0.2)
+    until not _G.Run or boss.Humanoid.Health <= 0
+end
+
+-- 🌍 วาป
+local function go(name)
+    pcall(function()
+        TeleportRemote:FireServer(name)
+    end)
+    task.wait(0.5)
+end
+
 -- 📍 NPC
--- =========================
 local NPC = CFrame.new(
     392.87, -2.22, -2177.80,
     -0.91, 0, -0.40,
@@ -202,53 +156,38 @@ local NPC = CFrame.new(
     0.40, 0, -0.91
 )
 
--- =========================
--- 🔁 LOOP FARM
--- =========================
+-- 🔁 LOOP
 task.spawn(function()
     while task.wait(1) do
         if not _G.Run then break end
 
-        -- Rimuru (Tween)
+        -- Rimuru
         go("Slime")
         SpawnRimuru:FireServer("Normal")
         waitBoss("RimuruBoss_Normal")
-        kill("RimuruBoss_Normal")
+        killTween("RimuruBoss_Normal")
 
-        -- Ichigo + Gilgamesh (วาปปกติ)
+        -- Ichigo + Gilgamesh
         go("Boss")
 
         SpawnBoss:FireServer("IchigoBoss")
         waitBoss("IchigoBoss")
-        kill("IchigoBoss")
+        killTween("IchigoBoss")
 
         SpawnBoss:FireServer("GilgameshBoss","Normal")
         waitBoss("GilgameshBoss")
-        kill("GilgameshBoss")
+        killTween("GilgameshBoss")
 
-        -- Strongest (Tween)
+        -- Strongest
         go("Shinjuku")
-
-        local char = player.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            local dist = (char.HumanoidRootPart.Position - NPC.Position).Magnitude
-            local time = dist / 120
-
-            local tween = TweenService:Create(
-                char.HumanoidRootPart,
-                TweenInfo.new(time, Enum.EasingStyle.Linear),
-                {CFrame = NPC}
-            )
-            tween:Play()
-            tween.Completed:Wait()
-        end
+        tween(NPC)
 
         SpawnStrongest:FireServer("StrongestToday","Normal")
         waitBoss("StrongestofTodayBoss_Normal")
-        kill("StrongestofTodayBoss_Normal")
+        killTween("StrongestofTodayBoss_Normal")
 
         SpawnStrongest:FireServer("StrongestHistory","Normal")
         waitBoss("StrongestinHistoryBoss_Normal")
-        kill("StrongestinHistoryBoss_Normal")
+        killTween("StrongestinHistoryBoss_Normal")
     end
 end)
