@@ -1,5 +1,4 @@
--- RC GOD FARM (FINAL + SMARTHIT)
-
+task.wait(10)
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -145,7 +144,7 @@ local function go(name)
     pcall(function()
         TeleportRemote:FireServer(name)
     end)
-    task.wait(1.5)
+    task.wait(2)
 end
 
 -- 📍 NPC
