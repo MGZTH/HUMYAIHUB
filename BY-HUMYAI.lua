@@ -77,7 +77,7 @@ task.spawn(function()
             if root and hum then
                 equip()
 
-                if hum.Health < hum.MaxHealth * 0.5 then
+                if hum.Health < hum.MaxHealth * 0.8 then
                     for i = 1, 2 do
                         CombatRemote:FireServer(root.Position)
                         task.wait(0.05)
@@ -119,8 +119,8 @@ end
 local function waitBoss(name)
     local t = 0
     repeat
-        task.wait(2)
-        t += 2
+        task.wait(0.5)
+        t += 0.5
     until findBoss(name) or t > 12
 end
 
@@ -144,7 +144,7 @@ local function go(name)
     pcall(function()
         TeleportRemote:FireServer(name)
     end)
-    task.wait(1)
+    task.wait(1.7)
 end
 
 -- 📍 NPC
