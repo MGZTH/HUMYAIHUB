@@ -27,7 +27,7 @@ local HakiRemote = RemoteEvents:WaitForChild("HakiRemote")
 -- Anti AFK
 player.Idled:Connect(function()
     VirtualUser:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
-    task.wait(5)
+    task.wait(60)
     VirtualUser:Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
 end)
 
@@ -77,7 +77,7 @@ task.spawn(function()
             if root and hum then
                 equip()
 
-                if hum.Health < hum.MaxHealth * 0.2 then
+                if hum.Health < hum.MaxHealth * 0.5 then
                     for i = 1, 2 do
                         CombatRemote:FireServer(root.Position)
                         task.wait(0.05)
@@ -108,7 +108,7 @@ local function tween(cf)
 
     local hrp = char.HumanoidRootPart
     local dist = (hrp.Position - cf.Position).Magnitude
-    local time = dist / 120
+    local time = dist / 140
 
     local t = TweenService:Create(hrp, TweenInfo.new(time, Enum.EasingStyle.Linear), {CFrame = cf})
     t:Play()
